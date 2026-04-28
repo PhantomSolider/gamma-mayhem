@@ -16,13 +16,13 @@
   let state = "menu", last = performance.now(), high = Number(store.get("gammaHigh","0")) || 0, raf = 0;
 
   const p = {x:W*.22,y:H*.5,vx:0,vy:0,r:14,lives:3,score:0,charge:10,inv:0,pulse:0,cool:0,flow:0};
-  const g = {t:0,wave:1,diff:1,gamma:4.2,shard:3.1,orb:2.4,well:13,hole:36,shake:0,msg:"Stable"};
+  const g = {t:0,wave:1,diff:1,gamma:4.2,shard:3.1,orb:2.4,well:15.5,hole:36,shake:0,pull:0,black:0,msg:"Stable"};
   const stars=[], rays=[], shards=[], orbs=[], wells=[], holes=[], parts=[];
 
   function resetStars(){stars.length=0; for(let i=0;i<150;i++) stars.push({x:Math.random()*W,y:Math.random()*H,z:rand(.25,1),tw:rand(0,TAU)});}
   function reset(){
     Object.assign(p,{x:W*.22,y:H*.5,vx:0,vy:0,r:14,lives:3,score:0,charge:10,inv:2.4,pulse:0,cool:0,flow:0});
-    Object.assign(g,{t:0,wave:1,diff:1,gamma:4.2,shard:3.1,orb:2.4,well:13,hole:36,shake:0,msg:"Stable"});
+    Object.assign(g,{t:0,wave:1,diff:1,gamma:4.2,shard:3.1,orb:2.4,well:15.5,hole:36,shake:0,pull:0,black:0,msg:"Stable"});
     rays.length=shards.length=orbs.length=wells.length=holes.length=parts.length=0;
     resetStars(); hud();
   }
@@ -36,8 +36,23 @@
   function spawnRay(){const warn=1.45;rays.push({x:W+80,y:rand(104,H-52),w:rand(180,270),h:rand(10,17),speed:rand(230,310)+g.diff*12,warn,totalWarn:warn,alive:true});}
   function spawnShard(){shards.push({x:rand(28,W-28),y:-24,vx:rand(-18,18),vy:rand(72,124)+g.diff*7,r:rand(7,13),a:rand(0,TAU),spin:rand(-2.2,2.2),alive:true});}
   function spawnOrb(){const guided=g.t<7;orbs.push({x:guided?W*.36:rand(W*.3,W-70),y:guided?clamp(p.y+rand(-48,48),112,H-64):rand(112,H-64),r:12,p:rand(0,TAU),alive:true});}
-  function spawnWell(){wells.push({x:rand(W*.45,W-80),y:rand(120,H-80),r:rand(48,68),s:rand(12,24),life:rand(6,8.5),p:0});}
-  function spawnHole(){holes.push({x:W+90,y:rand(136,H-96),r:28,pull:42+g.diff*2,vx:-(22+g.diff*1.5),life:16,spin:0}); g.shake=Math.max(g.shake,5);}
+  function wellInfluence(w){return w.r*2.85}
+  function wellStrengthScale(){return 1.1+clamp((g.diff-1)*.08,0,.08)}
+  function blackHoleInfluence(h){return h.r*8}
+  function blackHoleStrengthScale(){return 1.06+clamp((g.diff-1)*.1,0,.18)}
+  function spawnWell(){
+    const guided=g.t<32;
+    wells.push({
+      x:guided?clamp(p.x+rand(145,220),W*.36,W-90):rand(W*.45,W-80),
+      y:guided?clamp(p.y+rand(-72,72),124,H-84):rand(120,H-80),
+      r:rand(58,76),s:rand(50,66)*wellStrengthScale(),life:rand(7,9),p:0
+    });
+  }
+  function spawnHole(){
+    const guided=g.t<72;
+    holes.push({x:W+90,y:guided?clamp(p.y+rand(-78,78),136,H-96):rand(136,H-96),r:28,pull:(68+g.diff*5)*blackHoleStrengthScale(),vx:-(22+g.diff*1.5),life:16,spin:0});
+    g.shake=Math.max(g.shake,5);
+  }
 
   function axis(){const l=keys.ArrowLeft||keys.KeyA||touch.left,r=keys.ArrowRight||keys.KeyD||touch.right,u=keys.ArrowUp||keys.KeyW||touch.up,d=keys.ArrowDown||keys.KeyS||touch.down;return {x:(r?1:0)-(l?1:0),y:(d?1:0)-(u?1:0)}}
   function phiPulse(){
@@ -53,19 +68,38 @@
 
   function update(dt){
     if(state!=="playing")return;
-    const slow=p.flow>0?dt*.72:dt; g.t+=dt; const pressure=Math.max(0,g.t-8); g.diff=1+pressure/58; g.wave=1+Math.floor(g.t/24); g.msg=p.flow>0?"Phi Shield":p.inv>0&&p.lives<3?"Recovering":g.wave>=5?"Mayhem":"Stable";
-    p.score+=dt*(12+g.wave*4); p.inv=Math.max(0,p.inv-dt); p.cool=Math.max(0,p.cool-dt); p.flow=Math.max(0,p.flow-dt); g.shake=Math.max(0,g.shake-dt*18);
+    const slow=p.flow>0?dt*.72:dt; g.t+=dt; const pressure=Math.max(0,g.t-8); g.diff=1+pressure/58; g.wave=1+Math.floor(g.t/24);
+    p.score+=dt*(12+g.wave*4); p.inv=Math.max(0,p.inv-dt); p.cool=Math.max(0,p.cool-dt); p.flow=Math.max(0,p.flow-dt); g.shake=Math.max(0,g.shake-dt*18); g.pull=Math.max(0,g.pull-dt*2.8); g.black=Math.max(0,g.black-dt*3.2);
     if(p.pulse>0){p.pulse+=dt*360;if(p.pulse>150)p.pulse=0;}
     const a=axis(), len=Math.hypot(a.x,a.y)||1; p.vx+=(a.x/len)*720*dt; p.vy+=(a.y/len)*720*dt; p.vx*=Math.pow(.028,dt); p.vy*=Math.pow(.028,dt);
-    for(const w of wells){const dx=w.x-p.x,dy=w.y-p.y,d=Math.max(36,Math.hypot(dx,dy)); if(d<w.r*1.85){const pull=(w.s/d)*46*dt;p.vx+=(dx/d)*pull;p.vy+=(dy/d)*pull;}}
-    for(const h of holes){const dx=h.x-p.x,dy=h.y-p.y,d=Math.max(44,Math.hypot(dx,dy)); if(d<190){const pull=(h.pull/d)*68*dt;p.vx+=(dx/d)*pull;p.vy+=(dy/d)*pull;}}
+    let pullNow=0;
+    for(const w of wells){
+      const dx=w.x-p.x,dy=w.y-p.y,rawD=Math.hypot(dx,dy),range=wellInfluence(w);
+      if(rawD<range){
+        const d=Math.max(34,rawD),influence=1-rawD/range,pull=w.s*(.18+influence*1.45)*dt;
+        p.vx+=(dx/d)*pull;p.vy+=(dy/d)*pull;
+        pullNow=Math.max(pullNow,influence);
+      }
+    }
+    if(pullNow>0)g.pull=.42;
+    let blackNow=0;
+    for(const h of holes){
+      const dx=h.x-p.x,dy=h.y-p.y,rawD=Math.hypot(dx,dy),range=blackHoleInfluence(h);
+      if(rawD<range){
+        const d=Math.max(42,rawD),influence=1-rawD/range,pull=h.pull*(.22+influence*1.5)*dt;
+        p.vx+=(dx/d)*pull;p.vy+=(dy/d)*pull;
+        blackNow=Math.max(blackNow,influence);
+      }
+    }
+    if(blackNow>0)g.black=.5;
+    g.msg=p.flow>0?"Phi Shield":g.black>0?"Black Hole Pull":g.pull>0?"Gravity Pull":p.inv>0&&p.lives<3?"Recovering":g.wave>=5?"Mayhem":"Stable";
     const speed=Math.hypot(p.vx,p.vy), maxSpeed=p.flow>0?300:260; if(speed>maxSpeed){p.vx=p.vx/speed*maxSpeed;p.vy=p.vy/speed*maxSpeed;}
     p.x=clamp(p.x+p.vx*dt,p.r,W-p.r); p.y=clamp(p.y+p.vy*dt,SAFE_TOP,H-p.r);
     g.gamma-=slow;g.shard-=slow;g.orb-=slow;g.well-=slow;g.hole-=slow;
     if(g.gamma<=0){spawnRay();g.gamma=Math.max(.86,rand(1.35,2.15)-Math.max(0,g.diff-1)*.12)}
     if(g.shard<=0){spawnShard();if(g.wave>3&&Math.random()<.22)spawnShard();g.shard=Math.max(.42,rand(.85,1.35)-Math.max(0,g.diff-1)*.08)}
     if(g.orb<=0){spawnOrb();g.orb=rand(4.2,5.6)}
-    if(g.well<=0&&g.t>12){spawnWell();g.well=rand(9.5,13)}
+    if(g.well<=0&&g.t>15){spawnWell();g.well=rand(10,13.5)}
     if(g.hole<=0&&g.t>34){spawnHole();g.hole=rand(24,32)}
     entities(slow); collide(); hud();
   }
@@ -96,8 +130,34 @@
   function drawRay(r){if(r.warn>0){const progress=1-r.warn/r.totalWarn,a=.22+Math.sin(performance.now()/70)*.12+progress*.18,laneH=r.h*2+24;ctx.fillStyle=`rgba(255,79,216,${a})`;ctx.fillRect(0,r.y-laneH/2,W,laneH);ctx.strokeStyle="rgba(255,209,92,.75)";ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,r.y-laneH/2);ctx.lineTo(W,r.y-laneH/2);ctx.moveTo(0,r.y+laneH/2);ctx.lineTo(W,r.y+laneH/2);ctx.stroke();ctx.fillStyle="rgba(255,255,255,.85)";for(let x=20+(performance.now()/18%44);x<W;x+=44){ctx.fillRect(x,r.y-3,22,6)}ctx.font="bold 14px system-ui";ctx.textAlign="right";ctx.textBaseline="middle";ctx.fillText("GAMMA WARNING",W-24,r.y-18)}else{const b=ctx.createLinearGradient(r.x,r.y,r.x+r.w,r.y);b.addColorStop(0,"rgba(255,79,216,0)");b.addColorStop(.18,"rgba(255,79,216,.9)");b.addColorStop(.55,"rgba(98,233,255,.95)");b.addColorStop(1,"rgba(255,209,92,0)");ctx.fillStyle=b;ctx.fillRect(r.x,r.y-r.h,r.w,r.h*2);ctx.fillStyle="rgba(255,255,255,.92)";ctx.fillRect(r.x+12,r.y-2,Math.max(30,r.w-24),4)}}
   function drawShard(s){ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.a);ctx.shadowColor="#ff7373";ctx.shadowBlur=14;ctx.fillStyle="rgba(255,115,115,.92)";ctx.beginPath();ctx.moveTo(0,-s.r);ctx.lineTo(s.r*.72,0);ctx.lineTo(0,s.r);ctx.lineTo(-s.r*.72,0);ctx.closePath();ctx.fill();ctx.restore()}
   function drawOrb(o){const r=o.r+Math.sin(o.p)*2.5;ctx.shadowColor="#ffd15c";ctx.shadowBlur=22;ctx.fillStyle="rgba(255,209,92,.94)";ctx.beginPath();ctx.arc(o.x,o.y,r,0,TAU);ctx.fill();ctx.shadowBlur=0;ctx.fillStyle="rgba(3,4,13,.9)";ctx.font="bold 16px system-ui";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("Φ",o.x,o.y+1)}
-  function drawWell(w){const a=clamp(w.life/4,.15,.55),r=w.r+Math.sin(w.p)*6;ctx.strokeStyle=`rgba(168,139,255,${a})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(w.x,w.y,r,0,TAU);ctx.stroke();ctx.strokeStyle=`rgba(98,233,255,${a*.6})`;ctx.lineWidth=1;for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(w.x,w.y,r*(.45+i*.22),0,TAU);ctx.stroke()}}
-  function drawHole(h){ctx.save();ctx.translate(h.x,h.y);ctx.rotate(h.spin);ctx.strokeStyle="rgba(255,209,92,.9)";ctx.lineWidth=9;ctx.beginPath();ctx.ellipse(0,0,h.r*2.1,h.r*.68,0,0,TAU);ctx.stroke();ctx.fillStyle="#000";ctx.shadowColor="#a88bff";ctx.shadowBlur=40;ctx.beginPath();ctx.arc(0,0,h.r,0,TAU);ctx.fill();ctx.restore()}
+  function drawWell(w){
+    const a=clamp(w.life/4,.15,.55),r=w.r+Math.sin(w.p)*6,range=wellInfluence(w),pulse=Math.sin(w.p*1.7)*5;
+    ctx.save();ctx.globalCompositeOperation="screen";
+    const glow=ctx.createRadialGradient(w.x,w.y,w.r*.55,w.x,w.y,range);
+    glow.addColorStop(0,`rgba(168,139,255,${a*.18})`);
+    glow.addColorStop(.62,`rgba(98,233,255,${a*.075})`);
+    glow.addColorStop(1,"rgba(168,139,255,0)");
+    ctx.fillStyle=glow;ctx.beginPath();ctx.arc(w.x,w.y,range,0,TAU);ctx.fill();
+    ctx.setLineDash([12,9]);ctx.strokeStyle=`rgba(168,139,255,${a*.55})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(w.x,w.y,range+pulse,0,TAU);ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle=`rgba(98,233,255,${a*.42})`;ctx.lineWidth=1.5;
+    for(let i=0;i<8;i++){const t=w.p*.55+i*TAU/8,inner=r*(.55+.08*Math.sin(w.p+i)),outer=range*.82;ctx.beginPath();ctx.moveTo(w.x+Math.cos(t)*outer,w.y+Math.sin(t)*outer);ctx.lineTo(w.x+Math.cos(t+.28)*inner,w.y+Math.sin(t+.28)*inner);ctx.stroke()}
+    ctx.restore();
+    ctx.strokeStyle=`rgba(168,139,255,${a})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(w.x,w.y,r,0,TAU);ctx.stroke();ctx.strokeStyle=`rgba(98,233,255,${a*.6})`;ctx.lineWidth=1;for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(w.x,w.y,r*(.45+i*.22),0,TAU);ctx.stroke()}
+  }
+  function drawHole(h){
+    const range=blackHoleInfluence(h),pulse=Math.sin(h.spin*2)*6;
+    ctx.save();ctx.globalCompositeOperation="screen";
+    const field=ctx.createRadialGradient(h.x,h.y,h.r*.75,h.x,h.y,range);
+    field.addColorStop(0,"rgba(255,209,92,.18)");
+    field.addColorStop(.48,"rgba(168,139,255,.12)");
+    field.addColorStop(1,"rgba(255,79,216,0)");
+    ctx.fillStyle=field;ctx.beginPath();ctx.arc(h.x,h.y,range,0,TAU);ctx.fill();
+    ctx.setLineDash([16,11]);ctx.strokeStyle="rgba(255,209,92,.5)";ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(h.x,h.y,range+pulse,0,TAU);ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle="rgba(255,79,216,.42)";ctx.lineWidth=1.5;
+    for(let i=0;i<10;i++){const t=h.spin+i*TAU/10,outer=range*.86,inner=h.r*(1.7+.25*Math.sin(h.spin+i));ctx.beginPath();ctx.moveTo(h.x+Math.cos(t)*outer,h.y+Math.sin(t)*outer);ctx.lineTo(h.x+Math.cos(t+.42)*inner,h.y+Math.sin(t+.42)*inner);ctx.stroke()}
+    ctx.restore();
+    ctx.save();ctx.translate(h.x,h.y);ctx.rotate(h.spin);ctx.strokeStyle="rgba(255,209,92,.9)";ctx.lineWidth=9;ctx.beginPath();ctx.ellipse(0,0,h.r*2.1,h.r*.68,0,0,TAU);ctx.stroke();ctx.strokeStyle="rgba(255,79,216,.72)";ctx.lineWidth=3;ctx.beginPath();ctx.arc(0,0,h.r*1.55,0,TAU);ctx.stroke();ctx.fillStyle="#000";ctx.shadowColor="#a88bff";ctx.shadowBlur=40;ctx.beginPath();ctx.arc(0,0,h.r,0,TAU);ctx.fill();ctx.restore()
+  }
   function drawPart(q){const a=clamp(q.life,.05,1);ctx.fillStyle=q.color.replace(".95",String(a)).replace(".9",String(a));ctx.fillRect(q.x,q.y,q.size,q.size)}
   function vignette(){const v=ctx.createRadialGradient(W/2,H/2,120,W/2,H/2,W*.72);v.addColorStop(0,"rgba(0,0,0,0)");v.addColorStop(1,"rgba(0,0,0,.48)");ctx.fillStyle=v;ctx.fillRect(0,0,W,H)}
   function loop(now){const dt=clamp((now-last)/1000,0,.033);last=now;update(dt);draw();raf=requestAnimationFrame(loop)}

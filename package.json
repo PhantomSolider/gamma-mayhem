@@ -1,0 +1,9 @@
+{
+  "name": "gamma-mayhem",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Gamma Mayhem: a zero-dependency cosmic retro arcade browser game.",
+  "scripts": {
+    "check": "node --check game.js"
+  }
+}

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gamma Mayhem | Cosmic Retro Arcade</title>
+  <meta name="description" content="Gamma Mayhem is a cosmic retro arcade game about surviving gamma rays, entropy shards, gravity wells, and black-hole pressure." />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Cosmic Retro Arcade</p>
+        <h1>Gamma Mayhem</h1>
+        <p class="lede">Dodge cosmic hazards, collect Phi Orbs, and fire a Phi Pulse when the screen gets crowded.</p>
+      </div>
+      <div class="stats" aria-label="Run records">
+        <div><span>High Score</span><strong id="high">0</strong></div>
+        <div><span>Run State</span><strong id="mode">Stable</strong></div>
+      </div>
+    </header>
+
+    <section class="layout">
+      <article class="game-wrap">
+        <canvas id="game" width="960" height="540" aria-label="Gamma Mayhem game canvas" aria-describedby="controls systems"></canvas>
+        <div class="hud" aria-label="Current run status">
+          <div><span>Score</span><strong id="score">0</strong></div>
+          <div><span>Integrity</span><strong id="lives">3</strong></div>
+          <div><span>Phi Charge</span><strong id="charge">0%</strong></div>
+          <div><span>Wave</span><strong id="wave">1</strong></div>
+        </div>
+        <div class="overlay" id="overlay">
+          <div class="card">
+            <p class="eyebrow">Mission Brief</p>
+            <h2 id="title">Enter the Gamma Belt</h2>
+            <p id="brief">Pilot the Core through warning lanes, falling shards, gravity wells, and black holes. Collect Phi Orbs to charge your pulse.</p>
+            <button id="start" type="button">Start Run</button>
+          </div>
+        </div>
+      </article>
+
+      <aside class="panel" aria-label="Game reference">
+        <section id="controls">
+          <h2>Controls</h2>
+          <p><b>Move:</b> WASD or Arrow Keys</p>
+          <p><b>Phi Pulse:</b> Space</p>
+          <p><b>Pause:</b> P</p>
+          <p><b>Restart:</b> Enter</p>
+        </section>
+        <section id="systems">
+          <h2>Systems</h2>
+          <p><i class="dot gamma"></i>Gamma rays show a warning lane before they fire.</p>
+          <p><i class="dot entropy"></i>Entropy shards fall from above.</p>
+          <p><i class="dot gravity"></i>Gravity wells and black holes pull your route.</p>
+          <p><i class="dot phi"></i>Phi Orbs charge the Phi Pulse.</p>
+        </section>
+        <section>
+          <h2>How it was made</h2>
+          <p>A lightweight browser game built with HTML, CSS, JavaScript, and Canvas.</p>
+        </section>
+      </aside>
+    </section>
+
+    <section class="touch">
+      <div class="dpad">
+        <button type="button" data-touch="up" aria-label="Move up">▲</button>
+        <button type="button" data-touch="left" aria-label="Move left">◀</button>
+        <button type="button" data-touch="down" aria-label="Move down">▼</button>
+        <button type="button" data-touch="right" aria-label="Move right">▶</button>
+      </div>
+      <button type="button" class="pulse" data-touch="pulse" aria-label="Trigger Phi Pulse">Phi Pulse</button>
+    </section>
+
+    <section class="lore">
+      <article><h2>Warning Lanes</h2><p>Gamma rays mark their path before they fire. Move early and stay calm.</p></article>
+      <article><h2>Gravity Pull</h2><p>Wells and black holes tug at the Core. Correct your line before they drag you into danger.</p></article>
+      <article><h2>Phi Pulse</h2><p>Phi Orbs charge a burst that clears nearby hazards when you need space.</p></article>
+    </section>
+
+    <section class="how-play" aria-labelledby="how-play-title">
+      <h2 id="how-play-title">How to Play</h2>
+      <div class="how-grid">
+        <p><b>Objective:</b> Survive as long as possible and earn a high score.</p>
+        <p><b>Movement:</b> Use WASD or the Arrow Keys.</p>
+        <p><b>Phi Orbs:</b> Collect them to charge the Phi Pulse.</p>
+        <p><b>Phi Pulse:</b> Press Space when charged to clear nearby danger or protect yourself.</p>
+        <p><b>Hazards:</b> Dodge gamma rays, entropy shards, gravity wells, and black holes.</p>
+        <p><b>Pause:</b> Press P.</p>
+        <p><b>Restart:</b> Press Enter after game over.</p>
+        <p><b>Touch controls:</b> Use the on-screen buttons on mobile.</p>
+      </div>
+    </section>
+  </main>
+  <script src="./game.js" defer></script>
+</body>
+</html>

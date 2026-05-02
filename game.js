@@ -16,13 +16,13 @@
   let state = "menu", last = performance.now(), high = Number(store.get("gammaHigh","0")) || 0, raf = 0;
 
   const p = {x:W*.22,y:H*.5,vx:0,vy:0,r:14,lives:3,score:0,charge:10,inv:0,pulse:0,cool:0,flow:0};
-  const g = {t:0,wave:1,diff:1,gamma:4.2,shard:3.1,orb:2.4,well:15.5,hole:36,shake:0,pull:0,black:0,msg:"Stable"};
+  const g = {t:0,wave:1,diff:1,gamma:4.2,shard:3.1,orb:2.4,well:15.5,hole:36,edge:0,edgeCd:0,edgeActive:0,shake:0,pull:0,black:0,msg:"Stable"};
   const stars=[], rays=[], shards=[], orbs=[], wells=[], holes=[], parts=[];
 
   function resetStars(){stars.length=0; for(let i=0;i<150;i++) stars.push({x:Math.random()*W,y:Math.random()*H,z:rand(.25,1),tw:rand(0,TAU)});}
   function reset(){
     Object.assign(p,{x:W*.22,y:H*.5,vx:0,vy:0,r:14,lives:3,score:0,charge:10,inv:2.4,pulse:0,cool:0,flow:0});
-    Object.assign(g,{t:0,wave:1,diff:1,gamma:4.2,shard:3.1,orb:2.4,well:15.5,hole:36,shake:0,pull:0,black:0,msg:"Stable"});
+    Object.assign(g,{t:0,wave:1,diff:1,gamma:4.2,shard:3.1,orb:2.4,well:15.5,hole:36,edge:0,edgeCd:0,edgeActive:0,shake:0,pull:0,black:0,msg:"Stable"});
     rays.length=shards.length=orbs.length=wells.length=holes.length=parts.length=0;
     resetStars(); hud();
   }
@@ -33,25 +33,39 @@
   function hud(){ if(ui.score)ui.score.textContent=Math.floor(p.score).toLocaleString(); if(ui.lives)ui.lives.textContent=p.lives; if(ui.charge)ui.charge.textContent=`${Math.floor(p.charge)}%`; if(ui.wave)ui.wave.textContent=g.wave; if(ui.high)ui.high.textContent=Math.floor(high).toLocaleString(); if(ui.mode)ui.mode.textContent=g.msg; }
 
   function burst(x,y,n,color,s=130){ for(let i=0;i<n;i++){const a=rand(0,TAU),v=rand(s*.35,s);parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rand(.35,.9),color,size:rand(1.5,4)});} if(parts.length>MAX_PARTS)parts.splice(0,parts.length-MAX_PARTS);}
-  function spawnRay(){const warn=1.45;rays.push({x:W+80,y:rand(104,H-52),w:rand(180,270),h:rand(10,17),speed:rand(230,310)+g.diff*12,warn,totalWarn:warn,alive:true});}
-  function spawnShard(){shards.push({x:rand(28,W-28),y:-24,vx:rand(-18,18),vy:rand(72,124)+g.diff*7,r:rand(7,13),a:rand(0,TAU),spin:rand(-2.2,2.2),alive:true});}
+  function lateRamp(){return clamp((g.t-45)/140,0,1)}
+  function spawnRay(targetY){const warn=1.45,late=lateRamp();rays.push({x:W+80,y:clamp(targetY ?? rand(104,H-52),104,H-52),w:rand(180,270),h:rand(10,17),speed:(rand(230,310)+g.diff*12)*(1+late*.18),warn,totalWarn:warn,alive:true});}
+  function spawnShard(targetX){const late=lateRamp();shards.push({x:clamp(targetX ?? rand(28,W-28),28,W-28),y:-24,vx:rand(-18,18),vy:(rand(72,124)+g.diff*7)*(1+late*.2),r:rand(7,13),a:rand(0,TAU),spin:rand(-2.2,2.2),alive:true});}
   function spawnOrb(){const guided=g.t<7;orbs.push({x:guided?W*.36:rand(W*.3,W-70),y:guided?clamp(p.y+rand(-48,48),112,H-64):rand(112,H-64),r:12,p:rand(0,TAU),alive:true});}
-  function wellInfluence(w){return w.r*2.85}
-  function wellStrengthScale(){return 1.1+clamp((g.diff-1)*.08,0,.08)}
-  function blackHoleInfluence(h){return h.r*8}
-  function blackHoleStrengthScale(){return 1.06+clamp((g.diff-1)*.1,0,.18)}
-  function spawnWell(){
-    const guided=g.t<32;
+  function wellInfluence(w){return w.r*(3.05+lateRamp()*.38)}
+  function wellStrengthScale(){return (1.24+clamp((g.diff-1)*.1,0,.22))*(1+lateRamp()*.42)}
+  function blackHoleInfluence(h){return h.r*(8.45+lateRamp()*.85)}
+  function blackHoleStrengthScale(){return (1.24+clamp((g.diff-1)*.14,0,.32))*(1+lateRamp()*.46)}
+  function spawnWell(target){
+    const guided=g.t<32&&!target;
     wells.push({
-      x:guided?clamp(p.x+rand(145,220),W*.36,W-90):rand(W*.45,W-80),
-      y:guided?clamp(p.y+rand(-72,72),124,H-84):rand(120,H-80),
-      r:rand(58,76),s:rand(50,66)*wellStrengthScale(),life:rand(7,9),p:0
+      x:target?.x ?? (guided?clamp(p.x+rand(145,220),W*.36,W-90):rand(W*.34,W-80)),
+      y:target?.y ?? (guided?clamp(p.y+rand(-72,72),124,H-84):rand(120,H-80)),
+      r:rand(60,78),s:rand(54,70)*wellStrengthScale(),life:rand(7,9),p:0
     });
   }
   function spawnHole(){
     const guided=g.t<72;
-    holes.push({x:W+90,y:guided?clamp(p.y+rand(-78,78),136,H-96):rand(136,H-96),r:28,pull:(68+g.diff*5)*blackHoleStrengthScale(),vx:-(22+g.diff*1.5),life:16,spin:0});
+    holes.push({x:W+90,y:guided?clamp(p.y+rand(-78,78),136,H-96):rand(136,H-96),r:28,pull:(72+g.diff*6)*blackHoleStrengthScale(),vx:-(22+g.diff*1.5)*(1+lateRamp()*.1),life:16,spin:0});
     g.shake=Math.max(g.shake,5);
+  }
+  function edgePressure(dt){
+    const nearX=p.x<72||p.x>W-72,nearY=p.y<SAFE_TOP+54||p.y>H-72,corner=nearX&&nearY,edge=nearX||nearY;
+    g.edge=edge?clamp(g.edge+dt*(corner?1.75:1),0,3.4):Math.max(0,g.edge-dt*2.1);
+    g.edgeCd=Math.max(0,g.edgeCd-dt); g.edgeActive=Math.max(0,g.edgeActive-dt*2.5);
+    if(g.t<8||g.edge<1.15||g.edgeCd>0)return;
+    const late=lateRamp();
+    if(corner||Math.random()<.58)spawnRay(p.y+rand(-18,18)); else spawnShard(p.x+rand(-38,38));
+    if(g.t>20&&wells.length<3&&Math.random()<.34+late*.28){
+      const side=p.x<W*.5?1:-1;
+      spawnWell({x:clamp(p.x+rand(118,190)*side,92,W-92),y:clamp(p.y+rand(-72,72),124,H-84)});
+    }
+    g.edgeActive=.65; g.edgeCd=Math.max(1.35,2.65-late*.95);
   }
 
   function axis(){const l=keys.ArrowLeft||keys.KeyA||touch.left,r=keys.ArrowRight||keys.KeyD||touch.right,u=keys.ArrowUp||keys.KeyW||touch.up,d=keys.ArrowDown||keys.KeyS||touch.down;return {x:(r?1:0)-(l?1:0),y:(d?1:0)-(u?1:0)}}
@@ -68,7 +82,7 @@
 
   function update(dt){
     if(state!=="playing")return;
-    const slow=p.flow>0?dt*.72:dt; g.t+=dt; const pressure=Math.max(0,g.t-8); g.diff=1+pressure/58; g.wave=1+Math.floor(g.t/24);
+    const slow=p.flow>0?dt*.72:dt; g.t+=dt; const pressure=Math.max(0,g.t-8),late=lateRamp(); g.diff=1+pressure/58+late*late*1.05; g.wave=1+Math.floor(g.t/24);
     p.score+=dt*(12+g.wave*4); p.inv=Math.max(0,p.inv-dt); p.cool=Math.max(0,p.cool-dt); p.flow=Math.max(0,p.flow-dt); g.shake=Math.max(0,g.shake-dt*18); g.pull=Math.max(0,g.pull-dt*2.8); g.black=Math.max(0,g.black-dt*3.2);
     if(p.pulse>0){p.pulse+=dt*360;if(p.pulse>150)p.pulse=0;}
     const a=axis(), len=Math.hypot(a.x,a.y)||1; p.vx+=(a.x/len)*720*dt; p.vy+=(a.y/len)*720*dt; p.vx*=Math.pow(.028,dt); p.vy*=Math.pow(.028,dt);
@@ -92,15 +106,16 @@
       }
     }
     if(blackNow>0)g.black=.5;
-    g.msg=p.flow>0?"Phi Shield":g.black>0?"Black Hole Pull":g.pull>0?"Gravity Pull":p.inv>0&&p.lives<3?"Recovering":g.wave>=5?"Mayhem":"Stable";
+    g.msg=p.flow>0?"Phi Shield":g.edgeActive>0?"Edge Pressure":g.black>0?"Black Hole Pull":g.pull>0?"Gravity Pull":p.inv>0&&p.lives<3?"Recovering":g.wave>=5?"Mayhem":"Stable";
     const speed=Math.hypot(p.vx,p.vy), maxSpeed=p.flow>0?300:260; if(speed>maxSpeed){p.vx=p.vx/speed*maxSpeed;p.vy=p.vy/speed*maxSpeed;}
     p.x=clamp(p.x+p.vx*dt,p.r,W-p.r); p.y=clamp(p.y+p.vy*dt,SAFE_TOP,H-p.r);
+    edgePressure(dt);
     g.gamma-=slow;g.shard-=slow;g.orb-=slow;g.well-=slow;g.hole-=slow;
-    if(g.gamma<=0){spawnRay();g.gamma=Math.max(.86,rand(1.35,2.15)-Math.max(0,g.diff-1)*.12)}
-    if(g.shard<=0){spawnShard();if(g.wave>3&&Math.random()<.22)spawnShard();g.shard=Math.max(.42,rand(.85,1.35)-Math.max(0,g.diff-1)*.08)}
+    if(g.gamma<=0){spawnRay();g.gamma=Math.max(.58,rand(1.35,2.15)-Math.max(0,g.diff-1)*.12-late*.24)}
+    if(g.shard<=0){spawnShard();if(g.wave>3&&Math.random()<.22+late*.28)spawnShard();g.shard=Math.max(.29,rand(.85,1.35)-Math.max(0,g.diff-1)*.08-late*.15)}
     if(g.orb<=0){spawnOrb();g.orb=rand(4.2,5.6)}
-    if(g.well<=0&&g.t>15){spawnWell();g.well=rand(10,13.5)}
-    if(g.hole<=0&&g.t>34){spawnHole();g.hole=rand(24,32)}
+    if(g.well<=0&&g.t>15){spawnWell();g.well=Math.max(6.2,rand(10,13.5)-late*3.8)}
+    if(g.hole<=0&&g.t>34){spawnHole();g.hole=Math.max(14.5,rand(24,32)-late*8.5)}
     entities(slow); collide(); hud();
   }
   function entities(dt){

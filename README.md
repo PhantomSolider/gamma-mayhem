@@ -1,4 +1,6 @@
-# Gamma Mayhem
+## Live demo
+
+Play Gamma Mayhem: https://gamma-mayhem.vercel.app/
 
 Gamma Mayhem is a cosmic retro arcade game built as a lightweight browser project.
 
@@ -47,3 +49,15 @@ This can be deployed as a static site. Use these settings if a deploy tool asks:
 - Build Command: leave blank
 - Output Directory: `./`
 - Install Command: leave blank
+
+## How I Used OpenAI Codex and GPT-5.6
+
+I used **GPT-5.6** as a planning, reasoning, and evaluation partner throughout development. It helped me transform the original idea into a clear gameplay loop, define each mechanic, identify edge cases, create focused testing instructions, evaluate design decisions, and refine the project's documentation and presentation.
+
+I used **OpenAI Codex** directly within the project to inspect and modify the codebase, implement gameplay systems, diagnose problems, and verify targeted improvements. Codex supported development and testing across player movement, collisions, scoring, escalating waves, gravity wells, black holes, Phi Orb collection, Phi Pulse, keyboard controls, touch controls, responsive design, and game-state management.
+
+My development process followed a repeated cycle:
+
+**Plan → Implement → Playtest → Diagnose → Refine → Verify**
+
+Rather than accepting the first functional version, I used GPT-5.6 to reason through design, balance, clarity, and quality, then used Codex to implement and test focused changes. I remained responsible for the original concept, creative direction, gameplay decisions, evaluation, and final quality standard.

@@ -1,5 +1,7 @@
 # Gamma Mayhem Showcase Submission
 
+Updated for OpenAI Build Week, July 2026.
+
 ## Project Title
 
 Gamma Mayhem

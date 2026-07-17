@@ -1,3 +1,4 @@
+// Prepared for OpenAI Build Week, July 2026.
 (() => {
   "use strict";
   const canvas = document.getElementById("game");

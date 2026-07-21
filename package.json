@@ -5,5 +5,8 @@
   "description": "Gamma Mayhem, a zero-dependency cosmic retro arcade browser game prepared for OpenAI Build Week.",
   "scripts": {
     "check": "node --check game.js"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^2.0.0"
   }
 }
